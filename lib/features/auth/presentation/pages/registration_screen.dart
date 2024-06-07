@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:navigate_app/core/common_components/custom_text_form_field.dart';
-import 'package:navigate_app/core/theme/colors.dart';
-import 'package:navigate_app/core/theme/font.dart';
+import 'package:navigate_app/core/constants/color_constants.dart';
+import 'package:navigate_app/core/theme/text_style_utils.dart';
 import 'package:navigate_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:navigate_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:navigate_app/features/auth/presentation/bloc/auth_state.dart';
@@ -13,18 +13,23 @@ class RegistrationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController givenNameController = TextEditingController();
-    final TextEditingController familyNameController = TextEditingController();
-    final TextEditingController usernameController = TextEditingController();
+    final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
+    final TextEditingController firstNameController = TextEditingController();
+    final TextEditingController lastNameController = TextEditingController();
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      resizeToAvoidBottomInset: false,
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
         title: const Text('Register'),
-        backgroundColor: backgroundColor,
+        backgroundColor: AppColors.backgroundColor,
         centerTitle: false,
-        titleTextStyle: getHeebo(FontWeight.w500, 16, authTextColor),
+        titleTextStyle: getHeebo(
+          FontWeight.w500,
+          16,
+          AppColors.authTextColor,
+        ),
         elevation: 0.5,
       ),
       body: BlocListener<AuthBloc, AuthState>(
@@ -45,21 +50,21 @@ class RegistrationScreen extends StatelessWidget {
               children: [
                 const Expanded(flex: 1, child: SizedBox()),
                 CustomTextFormField(
-                  controller: givenNameController,
-                  labelText: 'Given Name',
-                  hintText: 'Enter Given Name',
+                  controller: firstNameController,
+                  labelText: 'First Name',
+                  hintText: 'Enter First Name',
                 ),
                 const SizedBox(height: 20),
                 CustomTextFormField(
-                  controller: familyNameController,
-                  labelText: 'Family Name',
-                  hintText: 'Enter Family Name',
+                  controller: lastNameController,
+                  labelText: 'Last Name',
+                  hintText: 'Enter Last Name',
                 ),
                 const SizedBox(height: 20),
                 CustomTextFormField(
-                  controller: usernameController,
-                  labelText: 'Username',
-                  hintText: 'Enter Username',
+                  controller: emailController,
+                  labelText: 'Email',
+                  hintText: 'Enter Email',
                 ),
                 const SizedBox(height: 20),
                 CustomTextFormField(
@@ -73,29 +78,26 @@ class RegistrationScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 130.0, right: 130),
                   child: ElevatedButton(
                     onPressed: () {
-                      final givenName = givenNameController.text;
-                      final familyName = familyNameController.text;
-                      final username = usernameController.text;
+                      final email = emailController.text;
                       final password = passwordController.text;
 
                       context.read<AuthBloc>().add(
-                            RegisterEvent(
-                              givenName,
-                              familyName,
-                              username,
-                              password,
-                            ),
+                            RegisterEvent(email, password),
                           );
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      backgroundColor: buttonColor,
+                      backgroundColor: AppColors.buttonColor,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                     ),
                     child: Text('Sign up',
-                        style: getHeebo(FontWeight.w500, 14, whiteTextColor)),
+                        style: getHeebo(
+                          FontWeight.w500,
+                          14,
+                         AppColors.whiteTextColor,
+                        )),
                   ),
                 ),
                 const Expanded(child: SizedBox()),

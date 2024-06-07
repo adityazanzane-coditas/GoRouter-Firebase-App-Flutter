@@ -17,6 +17,12 @@ class LocaleBloc extends Bloc<LocaleEvent, LocaleState> {
   }
 
   void _onLocaleChanged(LocaleChanged event, Emitter<LocaleState> emit) {
+    _saveSelectedLanguage(event.languageCode);
     emit(LocaleState(Locale(event.languageCode)));
+  }
+
+  Future<void> _saveSelectedLanguage(String languageCode) async {
+    final sharedPref = await SharedPreferences.getInstance();
+    await sharedPref.setString('selectedLanguage', languageCode);
   }
 }

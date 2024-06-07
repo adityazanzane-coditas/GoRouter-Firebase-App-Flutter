@@ -1,141 +1,206 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gen/gen_l10n/app_localization.dart';
-import 'package:navigate_app/core/theme/colors.dart';
-import 'package:navigate_app/core/theme/font.dart';
-import 'package:navigate_app/features/dashboard/data/book_data.dart';
-import 'package:navigate_app/features/dashboard/models/author_model.dart';
-import 'package:navigate_app/features/dashboard/models/book_model.dart';
+import 'package:navigate_app/core/constants/color_constants.dart';
+import 'package:navigate_app/core/theme/text_style_utils.dart';
+import 'package:go_router/go_router.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final arguments = ModalRoute.of(context)!.settings.arguments;
+    final message = arguments is RemoteMessage ? arguments : null;
     final appLocalizations = AppLocalizations.of(context)!;
+    final User? user = FirebaseAuth.instance.currentUser;
+    final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
-    final List<Book> localizedBooks = [
-      Book(
-        name: appLocalizations.bookOne,
-        description: appLocalizations.bookOneDescription,
-      ),
-      Book(
-        name: appLocalizations.bookTwo,
-        description: appLocalizations.bookTwoDescription,
-      ),
-      Book(
-        name: appLocalizations.bookThree,
-        description: appLocalizations.bookThreeDescription,
-      ),
-      Book(
-        name: appLocalizations.bookFour,
-        description: appLocalizations.bookFourDescription,
-      ),
-    ];
-
-    final List<Author> localizedAuthors = [
-      Author(
-        name: appLocalizations.authorOne,
-        description: appLocalizations.authorOneDescription,
-      ),
-      Author(
-        name: appLocalizations.authorTwo,
-        description: appLocalizations.authorTwoDescription,
-      ),
-      Author(
-        name: appLocalizations.authorThree,
-        description: appLocalizations.authorThreeDescription,
-      ),
-      Author(
-        name: appLocalizations.authorFour,
-        description: appLocalizations.authorFourDescription,
-      ),
-    ];
+    if (user == null) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: AppColors.backgroundColor,
+          centerTitle: false,
+          title: Text(
+            appLocalizations.home,
+            style: getHeebo(
+              FontWeight.w500,
+              20,
+              AppColors.blackTextColor,
+            ),
+          ),
+        ),
+        body: const Center(
+          child: Text("No user is signed in"),
+        ),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: AppColors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: backgroundColor,
+        backgroundColor: AppColors.backgroundColor,
         elevation: 0.6,
         centerTitle: false,
         title: Text(appLocalizations.home),
-        titleTextStyle: getHeebo(FontWeight.w500, 20, blackTextColor),
+        titleTextStyle: getHeebo(
+          FontWeight.w500,
+          20,
+          AppColors.blackTextColor,
+        ),
       ),
       body: ListView(
         children: [
+          if (message != null)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Notification Title: ${message.notification?.title ?? 'No Title'}',
+                    style:
+                        getHeebo(FontWeight.w500, 18, AppColors.blackTextColor),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Notification Body: ${message.notification?.body ?? 'No Body'}',
+                    style:
+                        getHeebo(FontWeight.w400, 16, AppColors.blackTextColor),
+                  ),
+                ],
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
               appLocalizations.books,
-              style: getHeebo(FontWeight.w500, 20, blackTextColor),
+              style: getHeebo(FontWeight.w500, 20, AppColors.blackTextColor),
             ),
           ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: localizedBooks.length,
-            itemBuilder: (context, index) {
-              final book = localizedBooks[index];
-              return Column(
-                children: [
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 16),
-                    minVerticalPadding: 0,
-                    title: Text(
-                      book.name,
-                      style: getHeebo(FontWeight.w400, 16, blackTextColor),
-                    ),
-                    onTap: () {
-                      context.push(
-                        '/books/${book.name}',
-                        extra: book,
-                      );
-                    },
-                  ),
-                  if (index < books.length)
-                    const Divider(
-                      height: 0,
-                    ),
-                ],
-              );
+          StreamBuilder(
+            stream: FirebaseFirestore.instance
+                .collection("users")
+                .where("email", isEqualTo: user.email)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.hasError) {
+                return const Center(
+                  child: Text("Error"),
+                );
+              } else if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    var bookData = snapshot.data!.docs[index].data();
+                    return Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.only(left: 16),
+                          minVerticalPadding: 0,
+                          title: Text(
+                            bookData["bookName"],
+                            style: getHeebo(
+                                FontWeight.w400, 16, AppColors.blackTextColor),
+                          ),
+                          onTap: () {
+                            analytics.logEvent(
+                              name: 'Book Selected',
+                              parameters: {
+                                'book_name': bookData["bookName"],
+                              },
+                            );
+                            context.push('/book/${bookData["bookName"]}',
+                                extra: bookData);
+                          },
+                        ),
+                        if (index < snapshot.data!.docs.length)
+                          const Divider(
+                            height: 0,
+                          ),
+                      ],
+                    );
+                  },
+                );
+              } else {
+                return const Center(
+                  child: Text("No Books"),
+                );
+              }
             },
           ),
-          // Authors Section
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Text(
               appLocalizations.authors,
-              style: getHeebo(FontWeight.w500, 20, blackTextColor),
+              style: getHeebo(FontWeight.w500, 20, AppColors.blackTextColor),
             ),
           ),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: localizedAuthors.length,
-            itemBuilder: (context, index) {
-              final author = localizedAuthors[index];
-              return Column(
-                children: [
-                  ListTile(
-                    contentPadding: const EdgeInsets.only(left: 16),
-                    minVerticalPadding: 0,
-                    title: Text(
-                      author.name,
-                      style: getHeebo(FontWeight.w400, 16, blackTextColor),
-                    ),
-                    onTap: () {
-                      context.push(
-                        '/author/${author.name}',
-                        extra: author,
-                      );
-                    },
-                  ),
-                  if (index < localizedAuthors.length)
-                    const Divider(
-                      height: 0,
-                    ),
-                ],
-              );
+          StreamBuilder(
+            stream: FirebaseFirestore.instance
+                .collection("users")
+                .where("email", isEqualTo: user.email)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.hasError) {
+                return const Center(
+                  child: Text("Error"),
+                );
+              } else if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: snapshot.data!.docs.length,
+                  itemBuilder: (context, index) {
+                    var authorData = snapshot.data!.docs[index].data();
+                    return Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.only(left: 16),
+                          minVerticalPadding: 0,
+                          title: Text(
+                            authorData["authorName"],
+                            style: getHeebo(
+                                FontWeight.w400, 16, AppColors.blackTextColor),
+                          ),
+                          onTap: () {
+                            analytics.logEvent(
+                              name: 'Author Selected',
+                              parameters: {
+                                'author_name': authorData["authorName"],
+                              },
+                            );
+                            context.push('/author/${authorData["authorName"]}',
+                                extra: authorData);
+                          },
+                        ),
+                        if (index < snapshot.data!.docs.length)
+                          const Divider(
+                            height: 0,
+                          ),
+                      ],
+                    );
+                  },
+                );
+              } else {
+                return const Center(
+                  child: Text("No Authors"),
+                );
+              }
             },
           ),
         ],

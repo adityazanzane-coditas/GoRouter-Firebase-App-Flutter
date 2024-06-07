@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_gen/gen_l10n/app_localization.dart';
-import 'package:navigate_app/core/theme/colors.dart';
+import 'package:navigate_app/core/constants/color_constants.dart';
+import 'package:navigate_app/core/constants/image_constants.dart';
 import 'package:navigate_app/features/auth/presentation/pages/registration_screen.dart';
 import 'package:navigate_app/features/auth/presentation/pages/signin_screen.dart';
-import 'package:navigate_app/features/dashboard/models/author_model.dart';
-import 'package:navigate_app/features/dashboard/models/book_model.dart';
 import 'package:navigate_app/features/dashboard/presentation/bloc/navigation_bloc.dart';
 import 'package:navigate_app/features/dashboard/presentation/bloc/navigation_event.dart';
 import 'package:navigate_app/features/dashboard/presentation/bloc/navigation_state.dart';
@@ -20,17 +19,29 @@ import 'package:navigate_app/features/dashboard/presentation/pages/setting_scree
 import 'package:navigate_app/features/onboarding/presentation/pages/onboarding_screen_one.dart';
 import 'package:navigate_app/features/onboarding/presentation/pages/onboarding_screen_three.dart';
 import 'package:navigate_app/features/onboarding/presentation/pages/onboarding_screen_two.dart';
-import 'package:navigate_app/features/splash/presentation/page/splash_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final GoRouter router = GoRouter(
-  initialLocation: '/',
+  redirect: (context, state) async {
+    final sharedPref = await SharedPreferences.getInstance();
+    final isLoggedIN = sharedPref.getBool('Login') ?? false;
+
+    if (isLoggedIN) {
+      if (state.uri.toString() == '/' ||
+          state.uri.toString().startsWith('/signin')) {
+        return '/home';
+      }
+    } else {
+      if (state.uri.toString() != '/' &&
+          !state.uri.toString().startsWith('/signin')) {
+        return '/signin';
+      }
+    }
+    return null;
+  },
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const SplashScreen(),
-    ),
-    GoRoute(
-      path: '/onboarding1',
       builder: (context, state) => const OnBoardingScreenOne(),
     ),
     GoRoute(
@@ -54,21 +65,15 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/author/:name',
       builder: (context, state) {
-        final author = state.extra as Author;
-        return AuthorDetailsScreen(
-          authorName: author.name,
-          authorDescription: author.description,
-        );
+        final authorData = state.extra as Map<String, dynamic>;
+        return AuthorDetailsScreen(authorData: authorData);
       },
     ),
     GoRoute(
-      path: '/books/:name',
+      path: '/book/:name',
       builder: (context, state) {
-        final book = state.extra as Book;
-        return BookDetailsScreen(
-          bookName: book.name,
-          bookDescription: book.description,
-        );
+        final bookData = state.extra as Map<String, dynamic>;
+        return BookDetailsScreen(bookData: bookData);
       },
     ),
     StatefulShellRoute.indexedStack(
@@ -76,7 +81,7 @@ final GoRouter router = GoRouter(
         return BlocBuilder<NavigationBloc, NavigationState>(
           builder: (context, navState) {
             return Scaffold(
-              backgroundColor: backgroundColor,
+              backgroundColor: AppColors.blackTextColor,
               body: IndexedStack(
                 index: navState.index,
                 children: const [
@@ -92,7 +97,7 @@ final GoRouter router = GoRouter(
                   highlightColor: Colors.transparent,
                 ),
                 child: BottomNavigationBar(
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.whiteTextColor,
                   type: BottomNavigationBarType.fixed,
                   currentIndex: navState.index,
                   onTap: (index) {
@@ -100,12 +105,12 @@ final GoRouter router = GoRouter(
                         .read<NavigationBloc>()
                         .add(NavigationItemTapped(index));
                   },
-                  selectedItemColor: Colors.black,
-                  unselectedItemColor: const Color(0xff878787),
+                  selectedItemColor: AppColors.blackTextColor,
+                  unselectedItemColor: Color(int.parse('0xff878787')),
                   items: [
                     BottomNavigationBarItem(
                       icon: SvgPicture.asset(
-                        'assets/icons/home.svg',
+                        AppAssets.homeIcon,
                         colorFilter: const ColorFilter.mode(
                             Color(0xff626F86), BlendMode.srcIn),
                       ),
@@ -113,7 +118,7 @@ final GoRouter router = GoRouter(
                     ),
                     BottomNavigationBarItem(
                       icon: SvgPicture.asset(
-                        'assets/icons/author.svg',
+                        AppAssets.authorIcon,
                         colorFilter: const ColorFilter.mode(
                             Color(0xff626F86), BlendMode.srcIn),
                       ),
@@ -121,7 +126,7 @@ final GoRouter router = GoRouter(
                     ),
                     BottomNavigationBarItem(
                       icon: SvgPicture.asset(
-                        'assets/icons/books.svg',
+                        AppAssets.booksIcon,
                         colorFilter: const ColorFilter.mode(
                             Color(0xff626F86), BlendMode.srcIn),
                       ),
@@ -129,7 +134,7 @@ final GoRouter router = GoRouter(
                     ),
                     BottomNavigationBarItem(
                       icon: SvgPicture.asset(
-                        'assets/icons/setting.svg',
+                        AppAssets.settingIcon,
                         colorFilter: const ColorFilter.mode(
                             Color(0xff626F86), BlendMode.srcIn),
                       ),

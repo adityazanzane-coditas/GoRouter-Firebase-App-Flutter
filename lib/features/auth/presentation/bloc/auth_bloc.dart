@@ -1,33 +1,41 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:navigate_app/features/auth/data/user_repository/user_repository.dart';
+import 'package:navigate_app/features/auth/domain/entities/user_entity.dart';
+import 'package:navigate_app/features/auth/domain/usecases/auth_usecases.dart';
 import 'package:navigate_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:navigate_app/features/auth/presentation/bloc/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final UserRepository userRepository;
+  final RegisterUserUseCase registerUserUseCase;
+  final LoginUserUseCase loginUserUseCase;
 
-  AuthBloc(this.userRepository) : super(AuthInitial()) {
+  AuthBloc(
+    this.registerUserUseCase,
+    this.loginUserUseCase,
+  ) : super(AuthInitial()) {
     on<LoginEvent>((event, emit) async {
       emit(AuthLoading());
-
-      if (userRepository.isUserPresent(event.username, event.password)) {
+      try {
+        await loginUserUseCase(UserEntity(
+          email: event.email,
+          password: event.password,
+        ));
         emit(AuthAuthenticated());
-      } else {
-        emit(const AuthError('User is not registered. Please register.'));
+      } catch (e) {
+        emit(AuthError(e.toString()));
       }
     });
 
     on<RegisterEvent>((event, emit) async {
       emit(AuthLoading());
-
-      userRepository.registerUser(
-        event.givenName,
-        event.familyName,
-        event.username,
-        event.password,
-      );
-
-      emit(AuthAuthenticated());
+      try {
+        await registerUserUseCase(UserEntity(
+          email: event.email,
+          password: event.password,
+        ));
+        emit(AuthAuthenticated());
+      } catch (e) {
+        emit(AuthError(e.toString()));
+      }
     });
   }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:navigate_app/core/common_components/custom_button.dart';
-import 'package:navigate_app/core/theme/colors.dart';
-import 'package:navigate_app/core/theme/font.dart';
+import 'package:navigate_app/core/constants/color_constants.dart';
+import 'package:navigate_app/core/theme/text_style_utils.dart';
 
 class OnBoardingScreenOne extends StatelessWidget {
   const OnBoardingScreenOne({super.key});
@@ -10,7 +10,6 @@ class OnBoardingScreenOne extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -21,7 +20,7 @@ class OnBoardingScreenOne extends StatelessWidget {
                 onPressed: () {
                   context.go('/signin');
                 },
-                backgroundColor: buttonColor,
+                backgroundColor: AppColors.buttonColor,
                 horizontalPadding: 32,
                 verticalPadding: 0,
                 borderRadius: 16,
@@ -43,7 +42,7 @@ class OnBoardingScreenOne extends StatelessWidget {
                 onPressed: () {
                   context.go('/onboarding2');
                 },
-                backgroundColor: buttonColor,
+                backgroundColor: AppColors.buttonColor,
                 horizontalPadding: 46,
                 verticalPadding: 15,
                 borderRadius: 12,
